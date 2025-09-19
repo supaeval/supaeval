@@ -1,0 +1,86 @@
+---
+description: Rules for creating a usecase in the frontend
+globs:
+alwaysApply: true
+---
+
+# Frontend Usecase Creation Rules
+
+When creating a new usecase in the frontend, follow these steps:
+
+## 1. Create the Usecase File
+
+Create a new file in `/frontend/src/core/usecases/` with the naming convention: `kebab-case-name.usecase.ts`
+
+### Template:
+```typescript
+import { ServiceName } from "@/lib/services/gen-api";
+
+export class UsecaseNameUsecase {
+  async execute() {
+    return await ServiceName.serviceMethod();
+  }
+}
+```
+
+### Example:
+```typescript
+import { UsersService } from "@/lib/services/gen-api";
+
+export class GetMyProfileUsecase {
+  async execute() {
+    return await UsersService.usersControllerGetMe();
+  }
+}
+```
+
+## 2. Add Import to Application
+
+Add the import to `/frontend/src/core/application.ts` in the imports section:
+
+```typescript
+import { UsecaseNameUsecase } from "./usecases/kebab-case-name.usecase";
+```
+
+## 3. Instantiate in Application
+
+Add the instantiation in the appropriate section (Frontend usecases or Backoffice usecases):
+
+```typescript
+export const usecaseNameUsecase = new UsecaseNameUsecase();
+```
+
+## 4. Naming Conventions
+
+- **File name**: `kebab-case-name.usecase.ts`
+- **Class name**: `PascalCaseNameUsecase`
+- **Export name**: `camelCaseNameUsecase`
+- **Method name**: Always `execute()`
+
+## 5. Service Integration
+
+- Import the generated service from `@/lib/services/gen-api`
+- Call the service method directly in the `execute()` method
+- No parameters needed for simple usecases
+- Return the service response directly
+
+## 6. File Structure
+
+```
+/frontend/src/core/usecases/
+├── get-my-profile.usecase.ts
+├── fetch-dashboard-stats.usecase.ts
+├── list-projects.usecase.ts
+└── ...
+```
+
+## 7. Usage
+
+Import and use the usecase from the application:
+
+```typescript
+import { getMyProfileUsecase } from "@/core/application";
+
+// In component or hook
+const profile = await getMyProfileUsecase.execute();
+```

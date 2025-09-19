@@ -1,0 +1,223 @@
+---
+description: Rules for creating an endpoint in the backend
+globs:
+alwaysApply: true
+---
+
+When we ask to create an endpoint in the backend you always need to follow the following rules.
+
+
+- Add the endpoint into the corresponding controller.
+
+- For endpoint paths we use the slack style convention which is a mix between rest + imperative.
+
+- Add an operation summary and description to the controller. The summary is the name of the endpoint and the description is a short sentence explaining some details or business logic. Example: @ApiOperation({ summary: 'Abort a recensement', description: 'Delete a recensement and all its related data' })
+
+- If it is an endpoint expecting a body, make sure to create a DTO in the corresponding dto directory. DTO must be named like others example : create-sample.dto.ts 
+
+- For the endpoint response, make sure to create a DTO as well and to explicitely type the response of the controller method with it.
+
+- Response DTOs will always be named as "do-something.response.dto.ts". Example :
+
+```ts
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsEmail,
+  IsBoolean,
+  IsDate,
+  IsIn,
+  IsNotEmpty,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { Authorizations } from '@prisma/client';
+
+export class CreateUserResponseDto {
+  @ApiProperty({
+    description: 'The unique identifier of the user',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({
+    description: 'The first name of the user',
+    example: 'John',
+  })
+  @IsString()
+  @IsNotEmpty()
+  firstName: string;
+
+  @ApiProperty({
+    description: 'The last name of the user',
+    example: 'Doe',
+  })
+  @IsString()
+  @IsNotEmpty()
+  lastName: string;
+
+  @ApiProperty({
+    description: 'The email address of the user',
+    example: 'john.doe@example.com',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({
+    description: 'Whether the user account is active',
+    example: true,
+  })
+  @IsBoolean()
+  isActive: boolean;
+
+  @ApiProperty({
+    description: 'The authorization level for lab access',
+    enum: Authorizations,
+    example: Authorizations.NONE,
+  })
+  @IsIn(Object.values(Authorizations))
+  labAuthorization: Authorizations;
+
+  @ApiProperty({
+    description: 'The authorization level for rec access',
+    enum: Authorizations,
+    example: Authorizations.NONE,
+  })
+  @IsIn(Object.values(Authorizations))
+  recAuthorization: Authorizations;
+
+  @ApiProperty({
+    description: 'The authorization level for project access',
+    enum: Authorizations,
+    example: Authorizations.NONE,
+  })
+  @IsIn(Object.values(Authorizations))
+  projectAuthorization: Authorizations;
+
+  @ApiProperty({
+    description: 'The creation timestamp',
+    example: '2024-03-14T12:00:00.000Z',
+  })
+  @IsDate()
+  @Type(() => Date)
+  createdAt: Date;
+
+  @ApiProperty({
+    description: 'The last update timestamp',
+    example: '2024-03-14T12:00:00.000Z',
+  })
+  @IsDate()
+  @Type(() => Date)
+  updatedAt: Date;
+}
+```
+
+- When you create a service method, it should always return an entity class. An entity class is like a DTO but it's in the entity directory and named as my-resource.entity.ts
+
+- For dtos, you need to add all required decorators such as @IsString(), @IsNullable(), @IsDate() etc. These decorator will help us to generate the documentation with swagger.
+
+- When there is no error that can be handled by a service, it's okay if the service returns an entity directly. However, when you need to handle errors in a service, the service method must return a Result<Entity, ErrorType>. The ErrorType must be defined in the resource.errors.ts file inside your resource directory. You can find example of what's already in the project. Example :
+
+```ts
+  async create(ownerId: string): Promise<Result<RecensementEntity, CreateRecensementError>> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: ownerId,
+      },
+    });
+
+    if (!user) {
+      return Result.error(new UserNotFoundError('User not found'));
+    }
+
+    const recensement = await this.prisma.recensement.create({
+      data: {
+        recBy: { connect: { id: ownerId } },
+        recDate: new Date(),
+        status: RecStatus.DO,
+        nameOfExpectedSamples: [],    
+      },
+    });
+
+    return Result.ok(recensement as RecensementEntity);
+  }
+```
+
+- When a service returns a Result<> instance then the controller must : 1. do a switch to handle all cases and 2. document the controller possible response for swagger. Example : 
+
+```ts 
+  @Post()
+  @ApiResponse({
+    status: 201,
+    description: 'Recensement created successfully',
+    type: CreateRecensementResponseDto,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 422 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Unprocessable Entity.' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to create recensement',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to create recensement' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  @Post()
+  async create(
+    @Req() req: UserAuthenticatedRequest
+  ): Promise<CreateRecensementResponseDto> {
+    const result = await this.recensementsService.create(req.user.uid);
+
+    const [recensement, error] = result.toTuple();
+
+    if (recensement) {
+      return recensement;
+    }
+
+    switch (error.type) {
+      case 'user-not-found-error':
+        throw new UnprocessableEntityException('User not found');
+      default:
+        throw new InternalServerErrorException('Failed to create recensement');
+    }
+  }
+```
+
+- Never use "as" to convert a type unless you have no choice.
+
+- When you decorate an enum that is present in prisma use the following form instead of passing it inline :
+
+```ts
+  import { Authorizations } from '@prisma/client';
+
+  ...truncated...
+  @IsIn(Object.values(Authorizations))
+  labAuthorization: Authorizations;
+```
+
+This allows us to type the enum in the client sdk.
+
+- When you add an array of entities to a DTO, always document it with ValidateNested and Type as in the example bellow:
+
+```ts
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpsertedFieldSheetResponseDto)
+  fieldSheets: UpsertedFieldSheetResponseDto[];
+```

@@ -1,0 +1,40 @@
+---
+description: Rules for updating the frontend ui
+globs:
+alwaysApply: true
+---
+
+- We use shadcn library, always prioritize using a shadcn component over something else unless we ask you the opposite.
+
+- Each action fetching data on a server or doing something that can take time will trigger a loading.
+
+- Loading must be shows in the nearest context, for example if I click a button, I expect it to become loading.
+
+- If an action result in an error I must be able to see it. Errors must be in the nearest context. For example right below a form instead of as a toaster.
+
+- Everytime there is a page loading, we must have a skeleton for that page with the same shape.
+
+- The app will always have a global loader for the layout waiting necessary data loads and context to be filled, and then one skeleton per page.
+
+- Our layout and colors will always be clean, modern and neat. Not too much color, not to much things but very very neat. You can add icons from lucide icons to make it neater.
+
+- We always want to show empty states when a list is empty, a search is empty, or the user has to perfect something to initiate something. Use the same shared and coherent empty state component across the app.
+
+- Try to create reusable components as much as possible.
+
+- Use @tanstack/react-query to create a hook when you want to fetch data from a component or page
+
+- Create a usecase for features and follow the frontend-usecase-creation rule
+
+- All routes must be instantiated in the routes/index.ts file. Never use router.push with a route string. Always use a specified route in the routes files. A route has a path key which is a function with or without argument depending on the route, example :
+
+export const ProjectDetailRoute = {
+path: (id: string) => `/projects/${id}`
+}
+
+// To use it:
+router.push(ProjectDetailRoute.path('the id'))
+
+- Always create component as functional component with arrow functions
+
+- Always use react-hook-form to create and validate forms, even with custom components.

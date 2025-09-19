@@ -1,0 +1,69 @@
+volumes:
+  supaeval_data:
+
+networks:
+  supaeval-network:
+    driver: bridge
+
+services:
+  # supaeval_frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: ./frontend/Dockerfile.dev
+  #   container_name: supaeval-frontend
+  #   hostname: supaeval-frontend
+  #   ports:
+  #     - "${FRONTEND_PORT:-3000}:3000"
+  #   volumes:
+  #     - ./frontend:/src
+  #   depends_on:
+  #     - supaeval_backend
+  #   networks:
+  #     - supaeval-network
+  #   environment:
+  #     - SUPAEVAL_PUBLIC_API_URL=${SUPAEVAL_PUBLIC_API_URL}
+
+  supaeval_db:
+    image: postgres:16
+    container_name: supaeval-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - supaeval_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - supaeval-network
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=1GB"
+      - "-c"
+      - "maintenance_work_mem=1GB"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  supaeval_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: supaeval-backend
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-3001}:3000"
+    volumes:
+      - /tmp:/tmp
+      - ./backend:/app
+      - ./backend/.credentials:/credentials
+      - ./openapi:/openapi
+    depends_on:
+      supaeval_db:
+        condition: service_healthy
+    networks:
+      - supaeval-network
