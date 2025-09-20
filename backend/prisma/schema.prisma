@@ -8,3 +8,157 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProjectType {
+  IMAGE_EXTRACTION
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+
+  name String
+
+  users User[]
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(uuid())
+
+  email String   @unique
+
+  displayName String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdProjects Project[]
+  createdAnnotations Annotation[]
+  createdComments Comment[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  type        ProjectType @default(IMAGE_EXTRACTION)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdBy User @relation(fields: [createdById], references: [id])
+  createdById String
+
+  dataset Dataset?
+}
+
+model Dataset {
+  id        String   @id @default(uuid())
+
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  records DatasetRecord[]
+}
+
+enum ResourceType {
+  IMAGE
+}
+
+enum RecordStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+model DatasetRecord {
+  id        String   @id @default(uuid())
+
+  datasetId String
+  dataset   Dataset  @relation(fields: [datasetId], references: [id])
+
+  resourceId String   @unique
+  resource   Resource @relation(fields: [resourceId], references: [id])
+
+  annotations Annotation[]
+  comments Comment[]
+
+  status RecordStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Annotation {
+  id        String   @id @default(uuid())
+
+  datasetRecordId String
+  datasetRecord   DatasetRecord @relation(fields: [datasetRecordId], references: [id])
+
+  keyValuePairs AnnotationKeyValuePair[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+
+  datasetRecordId String
+  datasetRecord   DatasetRecord @relation(fields: [datasetRecordId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
+model AnnotationKeyValuePair {
+  id        String   @id @default(uuid())
+
+  annotationId String
+  annotation   Annotation @relation(fields: [annotationId], references: [id])
+
+  key String
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum StorageProvider {
+  LOCAL
+  GCS
+  S3
+  AZURE
+}
+
+model Resource {
+
+  id        String   @id @default(uuid())
+
+  type ResourceType
+
+  storageProvider StorageProvider
+  storageKey String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  records DatasetRecord[]
+}
