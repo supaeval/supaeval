@@ -1,55 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Project, getProjectsUsecase } from "@/core/application";
 import { ProjectCard } from "@/components/ui/project-card";
 import { Button } from "@/components/ui/button";
 import { NewProjectDialog } from "@/components/ui/new-project-dialog";
+import { useCreateProject } from "@/hooks/use-create-project";
+import { useQuery } from "@tanstack/react-query";
 import { FolderOpen, Loader2, Plus } from "lucide-react";
+import type { CreateProjectParams } from "@/core/application";
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getProjectsUsecase.execute();
-        setProjects(data);
-      } catch (err) {
-        setError("Failed to load projects");
-        console.error("Error fetching projects:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const {
+    data: projects = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      return await getProjectsUsecase.execute();
+    },
+  });
 
-    fetchProjects();
-  }, []);
+  const createProjectMutation = useCreateProject();
 
-  const handleCreateProject = async (data: {
-    name: string;
-    description: string;
-    type: string;
-  }) => {
+  const handleCreateProject = async (data: CreateProjectParams) => {
     try {
-      setIsCreating(true);
-      // TODO: Implement actual project creation API call
-      console.log("Creating project:", data);
-
-      // For now, just close the dialog
+      await createProjectMutation.mutateAsync(data);
       setIsDialogOpen(false);
-
-      // TODO: Refresh projects list after creation
     } catch (error) {
+      // Error is handled by the mutation and will be displayed in the UI
       console.error("Error creating project:", error);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -71,7 +54,7 @@ export default function ProjectsPage() {
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-red-600 mb-2">{error}</p>
+            <p className="text-red-600 mb-2">Failed to load projects</p>
             <button
               onClick={() => window.location.reload()}
               className="text-blue-600 hover:text-blue-800 text-sm"
@@ -131,7 +114,8 @@ export default function ProjectsPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSubmit={handleCreateProject}
-        isLoading={isCreating}
+        isLoading={createProjectMutation.isPending}
+        error={createProjectMutation.error?.message}
       />
     </div>
   );

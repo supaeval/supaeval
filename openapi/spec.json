@@ -195,6 +195,132 @@
           "projects"
         ]
       }
+    },
+    "/projects/{projectId}/datasets/{datasetId}/upload": {
+      "post": {
+        "description": "Generate a signed URL for uploading a file to the project dataset",
+        "operationId": "ProjectsController_uploadFile",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the project",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "datasetId",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the dataset",
+            "schema": {
+              "example": "456e7890-e89b-12d3-a456-426614174001",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadFileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadFileResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Validation failed"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dataset not found or does not belong to the specified project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 422
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Dataset not found or does not belong to the specified project"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unprocessable Entity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to generate upload URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to generate upload URL"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Upload file to project dataset",
+        "tags": [
+          "projects"
+        ]
+      }
     }
   },
   "info": {
@@ -223,7 +349,10 @@
           "type": {
             "type": "string",
             "enum": [
-              "IMAGE_EXTRACTION"
+              "MULTIMODAL",
+              "IMAGE_EXTRACTION",
+              "LLM_TEXT",
+              "INSTANCE_SEGMENTATION"
             ],
             "description": "The type of the project",
             "example": "IMAGE_EXTRACTION"
@@ -233,6 +362,35 @@
           "name",
           "description",
           "type"
+        ]
+      },
+      "DatasetEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "CreateProjectResponseDto": {
@@ -256,7 +414,10 @@
           "type": {
             "type": "string",
             "enum": [
-              "IMAGE_EXTRACTION"
+              "MULTIMODAL",
+              "IMAGE_EXTRACTION",
+              "LLM_TEXT",
+              "INSTANCE_SEGMENTATION"
             ],
             "description": "The type of the project",
             "example": "IMAGE_EXTRACTION"
@@ -282,6 +443,13 @@
             "type": "string",
             "description": "The user ID who created this project",
             "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "datasets": {
+            "description": "The datasets associated with this project",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatasetEntity"
+            }
           }
         },
         "required": [
@@ -316,7 +484,10 @@
           "type": {
             "type": "string",
             "enum": [
-              "IMAGE_EXTRACTION"
+              "MULTIMODAL",
+              "IMAGE_EXTRACTION",
+              "LLM_TEXT",
+              "INSTANCE_SEGMENTATION"
             ],
             "description": "The type of the project",
             "example": "IMAGE_EXTRACTION"
@@ -342,6 +513,13 @@
             "type": "string",
             "description": "The user ID who created this project",
             "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "datasets": {
+            "description": "The datasets associated with this project",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatasetEntity"
+            }
           }
         },
         "required": [
@@ -387,6 +565,50 @@
           "count",
           "page",
           "nextPage"
+        ]
+      },
+      "UploadFileDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "The name of the file to upload",
+            "example": "image.jpg"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "The MIME type of the file",
+            "example": "image/jpeg"
+          }
+        },
+        "required": [
+          "fileName",
+          "contentType"
+        ]
+      },
+      "UploadFileResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The signed upload URL",
+            "example": "https://storage.googleapis.com/bucket/projects/123/datasets/456/1234567890-image.jpg?X-Goog-Algorithm=..."
+          },
+          "fields": {
+            "type": "object",
+            "description": "Additional fields for the upload request",
+            "example": {}
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Expiration time in seconds",
+            "example": 3600
+          }
+        },
+        "required": [
+          "url",
+          "fields",
+          "expiresIn"
         ]
       }
     }

@@ -10,10 +10,14 @@ import {
 } from './projects.errors';
 import { Result } from 'typescript-result';
 import { ListResponseData } from '../common/interfaces/list-response.interface';
+import { FileUploadService } from '../file-upload/file-upload.service';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
   async create(
     createProjectDto: CreateProjectDto,
@@ -38,15 +42,29 @@ export class ProjectsService {
       );
     }
 
-    const project: ProjectEntity = await this.prisma.project.create({
+    const projectWithDatasets = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
         type: createProjectDto.type,
         organizationId: organizationId,
         createdById: userId,
+        datasets: {
+          create: {
+            version: 1,
+          },
+        },
+      },
+      include: {
+        datasets: true,
       },
     });
+
+    // Convert the result to match our entity structure
+    const project: ProjectEntity = {
+      ...projectWithDatasets,
+      datasets: projectWithDatasets.datasets || undefined,
+    };
 
     return Result.ok(project);
   }
@@ -103,6 +121,83 @@ export class ProjectsService {
       return Result.ok(responseData);
     } catch (error) {
       return Result.error(new ProjectError('Failed to list projects'));
+    }
+  }
+
+  async getProjectWithDatasets(projectId: string) {
+    try {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          datasets: true,
+        },
+      });
+
+      return project;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async getDatasetByProjectAndDatasetId(projectId: string, datasetId: string) {
+    try {
+      const dataset = await this.prisma.dataset.findFirst({
+        where: {
+          id: datasetId,
+          projectId: projectId,
+        },
+      });
+
+      return dataset;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async generateUploadUrl(
+    projectId: string,
+    datasetId: string,
+    fileName: string,
+    contentType: string,
+  ): Promise<
+    Result<
+      { url: string; fields: Record<string, string>; expiresIn: number },
+      CreateProjectError
+    >
+  > {
+    try {
+      // Verify dataset exists and belongs to the project
+      const dataset = await this.getDatasetByProjectAndDatasetId(
+        projectId,
+        datasetId,
+      );
+
+      if (!dataset) {
+        return Result.error(
+          new ProjectError(
+            'Dataset not found or does not belong to the specified project',
+          ),
+        );
+      }
+
+      // Generate unique file name with project and dataset context
+      const timestamp = Date.now();
+      const uniqueFileName = `projects/${projectId}/datasets/${datasetId}/${timestamp}-${fileName}`;
+
+      // Generate signed upload URL using the file upload service
+      const signedUrl = await this.fileUploadService.signUploadUrl(
+        uniqueFileName,
+        contentType,
+        3600, // 1 hour expiration
+      );
+
+      return Result.ok({
+        url: signedUrl.url,
+        fields: signedUrl.fields,
+        expiresIn: signedUrl.expiresIn,
+      });
+    } catch (error) {
+      return Result.error(new ProjectError('Failed to generate upload URL'));
     }
   }
 }

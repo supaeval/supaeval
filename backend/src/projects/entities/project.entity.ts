@@ -1,7 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ProjectType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsString, IsNotEmpty, IsIn, IsDate } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsIn,
+  IsDate,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
+import { DatasetEntity } from '../../datasets/entities/dataset.entity';
 
 export class ProjectEntity {
   @ApiProperty({
@@ -68,4 +76,14 @@ export class ProjectEntity {
   @IsString()
   @IsNotEmpty()
   createdById: string;
+
+  @ApiProperty({
+    description: 'The datasets associated with this project',
+    type: [DatasetEntity],
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DatasetEntity)
+  datasets?: DatasetEntity[];
 }

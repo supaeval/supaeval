@@ -22,13 +22,18 @@ import { cn } from "@/lib/utils";
 const projectSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
-  type: z.enum(["multimodal", "llm-text", "instance-segmentation"]),
+  type: z.enum([
+    "MULTIMODAL",
+    "IMAGE_EXTRACTION",
+    "LLM_TEXT",
+    "INSTANCE_SEGMENTATION",
+  ]),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
 
 interface ProjectType {
-  id: "multimodal" | "llm-text" | "instance-segmentation";
+  id: "MULTIMODAL" | "IMAGE_EXTRACTION" | "LLM_TEXT" | "INSTANCE_SEGMENTATION";
   name: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -37,21 +42,28 @@ interface ProjectType {
 
 const projectTypes: ProjectType[] = [
   {
-    id: "multimodal",
+    id: "MULTIMODAL",
     name: "Multimodal extraction",
     description: "Extract data from images, documents, and text",
     icon: Image,
     available: true,
   },
   {
-    id: "llm-text",
+    id: "IMAGE_EXTRACTION",
+    name: "Image extraction",
+    description: "Extract data from images using AI",
+    icon: Image,
+    available: true,
+  },
+  {
+    id: "LLM_TEXT",
     name: "LLM Text extraction",
     description: "Extract structured data from text using AI",
     icon: FileText,
     available: false,
   },
   {
-    id: "instance-segmentation",
+    id: "INSTANCE_SEGMENTATION",
     name: "Instance segmentation",
     description: "Identify and segment objects in images",
     icon: Target,
@@ -64,6 +76,7 @@ interface NewProjectDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ProjectFormData) => void;
   isLoading?: boolean;
+  error?: string;
 }
 
 export function NewProjectDialog({
@@ -71,10 +84,11 @@ export function NewProjectDialog({
   onOpenChange,
   onSubmit,
   isLoading = false,
+  error,
 }: NewProjectDialogProps) {
   const [selectedType, setSelectedType] = useState<
-    "multimodal" | "llm-text" | "instance-segmentation"
-  >("multimodal");
+    "MULTIMODAL" | "IMAGE_EXTRACTION" | "LLM_TEXT" | "INSTANCE_SEGMENTATION"
+  >("MULTIMODAL");
 
   const {
     register,
@@ -87,7 +101,7 @@ export function NewProjectDialog({
     defaultValues: {
       name: "",
       description: "",
-      type: "multimodal",
+      type: "MULTIMODAL",
     },
   });
 
@@ -96,7 +110,11 @@ export function NewProjectDialog({
   };
 
   const handleTypeSelect = (
-    type: "multimodal" | "llm-text" | "instance-segmentation",
+    type:
+      | "MULTIMODAL"
+      | "IMAGE_EXTRACTION"
+      | "LLM_TEXT"
+      | "INSTANCE_SEGMENTATION",
   ) => {
     setSelectedType(type);
     setValue("type", type);
@@ -104,7 +122,7 @@ export function NewProjectDialog({
 
   const handleClose = () => {
     reset();
-    setSelectedType("multimodal");
+    setSelectedType("MULTIMODAL");
     onOpenChange(false);
   };
 
@@ -221,6 +239,12 @@ export function NewProjectDialog({
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

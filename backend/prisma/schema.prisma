@@ -10,6 +10,7 @@ datasource db {
 
 enum ProjectType {
   MULTIMODAL
+  IMAGE_EXTRACTION
   LLM_TEXT
   INSTANCE_SEGMENTATION
 }
@@ -48,7 +49,7 @@ model Project {
   id          String   @id @default(uuid())
   name        String
   description String
-  type        ProjectType @default(MULTIMODAL)
+  type        ProjectType @default(IMAGE_EXTRACTION)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -59,13 +60,15 @@ model Project {
   createdBy User @relation(fields: [createdById], references: [id])
   createdById String
 
-  dataset Dataset?
+  datasets Dataset[]
 }
 
 model Dataset {
   id        String   @id @default(uuid())
 
-  projectId String   @unique
+  version Int @default(autoincrement())
+
+  projectId String
   project   Project  @relation(fields: [projectId], references: [id])
 
   createdAt DateTime @default(now())

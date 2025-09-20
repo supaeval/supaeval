@@ -13,6 +13,16 @@ export class Environment {
 
   @IsString()
   API_KEY: string;
+
+  // GCS Configuration
+  @IsString()
+  GCS_PROJECT_ID: string;
+
+  @IsString()
+  GCS_BUCKET_NAME: string;
+
+  @IsOptional()
+  GCS_KEY_FILENAME?: string;
 }
 
 export const validateEnv = (config: NodeJS.ProcessEnv): Environment => {

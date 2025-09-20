@@ -4,14 +4,23 @@ import {
   Get,
   Body,
   Query,
+  Param,
   UnprocessableEntityException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectResponseDto } from './dto/create-project.response.dto';
 import { ListProjectsResponseDto } from './dto/list-projects.response.dto';
+import { UploadFileDto } from '../datasets/dto/upload-file.dto';
+import { UploadFileResponseDto } from '../datasets/dto/upload-file.response.dto';
 
 const mockUserId = 'B4549232-1eaa-40a4-90d2-6fe4a5b19bff';
 const mockOrganizationId = '04549232-1eaa-40a4-90d2-6fe4a5b19bfc';
@@ -174,6 +183,94 @@ export class ProjectsController {
         throw new UnprocessableEntityException('Organization not found');
       default:
         throw new InternalServerErrorException('Failed to list projects');
+    }
+  }
+
+  @Post(':projectId/datasets/:datasetId/upload')
+  @ApiOperation({
+    summary: 'Upload file to project dataset',
+    description:
+      'Generate a signed URL for uploading a file to the project dataset',
+  })
+  @ApiParam({
+    name: 'projectId',
+    description: 'The ID of the project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiParam({
+    name: 'datasetId',
+    description: 'The ID of the dataset',
+    example: '456e7890-e89b-12d3-a456-426614174001',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Upload URL generated successfully',
+    type: UploadFileResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid input data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Validation failed' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 422,
+    description:
+      'Dataset not found or does not belong to the specified project',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 422 },
+        message: {
+          type: 'string',
+          example:
+            'Dataset not found or does not belong to the specified project',
+        },
+        error: { type: 'string', example: 'Unprocessable Entity' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to generate upload URL',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to generate upload URL' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async uploadFile(
+    @Param('projectId') projectId: string,
+    @Param('datasetId') datasetId: string,
+    @Body() uploadFileDto: UploadFileDto,
+  ): Promise<UploadFileResponseDto> {
+    const result = await this.projectsService.generateUploadUrl(
+      projectId,
+      datasetId,
+      uploadFileDto.fileName,
+      uploadFileDto.contentType,
+    );
+
+    const [uploadData, error] = result.toTuple();
+
+    if (!error) {
+      return uploadData;
+    }
+
+    switch (error.type) {
+      case 'project-error':
+        throw new UnprocessableEntityException(error.message);
+      default:
+        throw new InternalServerErrorException('Failed to generate upload URL');
     }
   }
 }
