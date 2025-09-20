@@ -558,6 +558,108 @@
         ]
       }
     },
+    "/projects/{id}/annotations": {
+      "get": {
+        "description": "Get all annotations for a project with resource status information and pagination",
+        "operationId": "ProjectsController_listAnnotations",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the project",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Annotations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListAnnotationsResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Project not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to list annotations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to list annotations"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List project annotations",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/datasets/{id}": {
       "get": {
         "description": "Retrieve a dataset by its unique identifier without fetching records",
@@ -1130,6 +1232,16 @@
             "description": "The ID of the project this resource belongs to",
             "example": "123e4567-e89b-12d3-a456-426614174000"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_ANNOTATION",
+              "ANNOTATING",
+              "ANNOTATED"
+            ],
+            "description": "The annotation status of the resource",
+            "example": "PENDING_ANNOTATION"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -1154,6 +1266,7 @@
           "storageProvider",
           "storageKey",
           "projectId",
+          "status",
           "createdAt",
           "updatedAt",
           "signedDownloadUrl"
@@ -1167,6 +1280,99 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceWithSignedUrlDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "description": "Total count of items",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number",
+            "example": 1
+          },
+          "nextPage": {
+            "type": "number",
+            "nullable": true,
+            "description": "Next page number, null if no next page",
+            "example": 2
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "nextPage"
+        ]
+      },
+      "AnnotationWithResourceStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the annotation",
+            "example": "789e0123-e89b-12d3-a456-426614174002"
+          },
+          "resourceId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the resource this annotation belongs to",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "createdById": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The ID of the user who created this annotation",
+            "example": "456e7890-e89b-12d3-a456-426614174001"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp of the annotation",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp of the annotation",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "resourceStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING_ANNOTATION",
+              "ANNOTATING",
+              "ANNOTATED"
+            ],
+            "description": "The annotation status of the associated resource",
+            "example": "PENDING_ANNOTATION"
+          },
+          "resourceStorageKey": {
+            "type": "string",
+            "description": "The storage key of the associated resource",
+            "example": "projects/123/datasets/456/uploaded-image.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "resourceId",
+          "createdById",
+          "createdAt",
+          "updatedAt",
+          "resourceStatus",
+          "resourceStorageKey"
+        ]
+      },
+      "ListAnnotationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Array of annotations with resource status",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnotationWithResourceStatusDto"
             }
           },
           "count": {

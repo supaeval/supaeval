@@ -76,11 +76,25 @@ export default function ProjectsPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No projects found
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-6">
               Get started by creating your first project.
             </p>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Project
+            </Button>
           </div>
         </div>
+
+        <NewProjectDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          onSubmit={handleCreateProject}
+          isLoading={createProjectMutation.isPending}
+        />
       </div>
     );
   }

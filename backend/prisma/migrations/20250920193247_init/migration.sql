@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "public"."ProjectType" AS ENUM ('IMAGE_EXTRACTION');
+CREATE TYPE "public"."ProjectType" AS ENUM ('MULTIMODAL', 'IMAGE_EXTRACTION', 'LLM_TEXT', 'INSTANCE_SEGMENTATION');
 
 -- CreateEnum
 CREATE TYPE "public"."ResourceType" AS ENUM ('IMAGE');
@@ -9,6 +9,9 @@ CREATE TYPE "public"."RecordStatus" AS ENUM ('DRAFT', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "public"."StorageProvider" AS ENUM ('LOCAL', 'GCS', 'S3', 'AZURE');
+
+-- CreateEnum
+CREATE TYPE "public"."ResourceStatus" AS ENUM ('DRAFT', 'PENDING', 'ANNOTATING', 'ANNOTATED');
 
 -- CreateTable
 CREATE TABLE "public"."Organization" (
@@ -49,6 +52,7 @@ CREATE TABLE "public"."Project" (
 -- CreateTable
 CREATE TABLE "public"."Dataset" (
     "id" TEXT NOT NULL,
+    "version" SERIAL NOT NULL,
     "projectId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -71,7 +75,7 @@ CREATE TABLE "public"."DatasetRecord" (
 -- CreateTable
 CREATE TABLE "public"."Annotation" (
     "id" TEXT NOT NULL,
-    "datasetRecordId" TEXT NOT NULL,
+    "resourceId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "createdById" TEXT NOT NULL,
@@ -110,15 +114,14 @@ CREATE TABLE "public"."Resource" (
     "storageKey" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "status" "public"."ResourceStatus" NOT NULL DEFAULT 'DRAFT',
 
     CONSTRAINT "Resource_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Dataset_projectId_key" ON "public"."Dataset"("projectId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DatasetRecord_resourceId_key" ON "public"."DatasetRecord"("resourceId");
@@ -142,7 +145,7 @@ ALTER TABLE "public"."DatasetRecord" ADD CONSTRAINT "DatasetRecord_datasetId_fke
 ALTER TABLE "public"."DatasetRecord" ADD CONSTRAINT "DatasetRecord_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "public"."Resource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Annotation" ADD CONSTRAINT "Annotation_datasetRecordId_fkey" FOREIGN KEY ("datasetRecordId") REFERENCES "public"."DatasetRecord"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Annotation" ADD CONSTRAINT "Annotation_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "public"."Resource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Annotation" ADD CONSTRAINT "Annotation_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -155,3 +158,6 @@ ALTER TABLE "public"."Comment" ADD CONSTRAINT "Comment_createdById_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."AnnotationKeyValuePair" ADD CONSTRAINT "AnnotationKeyValuePair_annotationId_fkey" FOREIGN KEY ("annotationId") REFERENCES "public"."Annotation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Resource" ADD CONSTRAINT "Resource_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

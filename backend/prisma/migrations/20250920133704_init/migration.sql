@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "public"."Project" ALTER COLUMN "type" SET DEFAULT 'IMAGE_EXTRACTION';

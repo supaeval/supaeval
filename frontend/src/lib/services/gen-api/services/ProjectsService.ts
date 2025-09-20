@@ -7,6 +7,7 @@ import type { CreateProjectResponseDto } from '../models/CreateProjectResponseDt
 import type { CreateResourceDto } from '../models/CreateResourceDto';
 import type { CreateResourceResponseDto } from '../models/CreateResourceResponseDto';
 import type { GetProjectResponseDto } from '../models/GetProjectResponseDto';
+import type { ListAnnotationsResponseDto } from '../models/ListAnnotationsResponseDto';
 import type { ListProjectsResponseDto } from '../models/ListProjectsResponseDto';
 import type { ListResourcesResponseDto } from '../models/ListResourcesResponseDto';
 import type { UploadFileDto } from '../models/UploadFileDto';
@@ -186,6 +187,46 @@ export class ProjectsService {
             errors: {
                 404: `Project not found`,
                 500: `Failed to list resources`,
+            },
+        });
+    }
+    /**
+     * List project annotations
+     * Get all annotations for a project with resource status information and pagination
+     * @returns ListAnnotationsResponseDto Annotations retrieved successfully
+     * @throws ApiError
+     */
+    public static projectsControllerListAnnotations({
+        id,
+        page,
+        limit,
+    }: {
+        /**
+         * The ID of the project
+         */
+        id: string,
+        /**
+         * Page number (default: 1)
+         */
+        page?: number,
+        /**
+         * Number of items per page (default: 10)
+         */
+        limit?: number,
+    }): CancelablePromise<ListAnnotationsResponseDto> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/projects/{id}/annotations',
+            path: {
+                'id': id,
+            },
+            query: {
+                'page': page,
+                'limit': limit,
+            },
+            errors: {
+                404: `Project not found`,
+                500: `Failed to list annotations`,
             },
         });
     }

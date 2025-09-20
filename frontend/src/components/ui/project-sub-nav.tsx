@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Upload, Database, FileText, BarChart3 } from "lucide-react";
+import { Upload, Database, FileText, BarChart3, Tag } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -14,6 +14,12 @@ const navItems = [
     label: "Upload data",
     icon: Upload,
     href: (id: string) => `/projects/${id}/upload`,
+  },
+  {
+    id: "annotations",
+    label: "Annotations",
+    icon: Tag,
+    href: (id: string) => `/projects/${id}/annotations`,
   },
   {
     id: "dataset",

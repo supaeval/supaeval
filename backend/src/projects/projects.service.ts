@@ -4,7 +4,9 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { GetProjectResponseDto } from './dto/get-project.response.dto';
 import { ListResourcesResponseDto } from './dto/list-resources.response.dto';
+import { ListAnnotationsResponseDto } from './dto/list-annotations.response.dto';
 import { ResourceWithSignedUrlDto } from './dto/resource-with-signed-url.dto';
+import { AnnotationWithResourceStatusDto } from './dto/annotation-with-resource-status.dto';
 import { ProjectEntity } from './entities/project.entity';
 import { ResourceEntity } from './entities/resource.entity';
 import {
@@ -325,6 +327,88 @@ export class ProjectsService {
       return Result.ok(responseData);
     } catch (error) {
       return Result.error(new ProjectError('Failed to list resources'));
+    }
+  }
+
+  async listAnnotations(
+    projectId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<
+    Result<
+      ListResponseData<AnnotationWithResourceStatusDto>,
+      CreateProjectError
+    >
+  > {
+    try {
+      // Check if project exists
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) {
+        return Result.error(new ProjectError('Project not found'));
+      }
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Get total count of annotations for this project
+      const totalCount = await this.prisma.annotation.count({
+        where: {
+          resource: {
+            projectId: projectId,
+          },
+        },
+      });
+
+      // Get annotations with pagination, including resource status
+      const annotations = await this.prisma.annotation.findMany({
+        where: {
+          resource: {
+            projectId: projectId,
+          },
+        },
+        include: {
+          resource: {
+            select: {
+              status: true,
+              storageKey: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      });
+
+      // Transform annotations to include resource status
+      const annotationsWithStatus: AnnotationWithResourceStatusDto[] =
+        annotations.map((annotation) => ({
+          id: annotation.id,
+          resourceId: annotation.resourceId,
+          createdById: annotation.createdById,
+          createdAt: annotation.createdAt,
+          updatedAt: annotation.updatedAt,
+          resourceStatus: annotation.resource.status,
+          resourceStorageKey: annotation.resource.storageKey,
+        }));
+
+      // Calculate next page
+      const nextPage = skip + limit < totalCount ? page + 1 : null;
+
+      const responseData: ListResponseData<AnnotationWithResourceStatusDto> = {
+        items: annotationsWithStatus,
+        count: totalCount,
+        page,
+        nextPage,
+      };
+
+      return Result.ok(responseData);
+    } catch (error) {
+      return Result.error(new ProjectError('Failed to list annotations'));
     }
   }
 }

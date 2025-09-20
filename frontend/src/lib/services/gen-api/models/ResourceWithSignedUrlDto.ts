@@ -24,6 +24,10 @@ export type ResourceWithSignedUrlDto = {
      */
     projectId: string;
     /**
+     * The annotation status of the resource
+     */
+    status: 'PENDING_ANNOTATION' | 'ANNOTATING' | 'ANNOTATED';
+    /**
      * The creation timestamp of the resource
      */
     createdAt: string;

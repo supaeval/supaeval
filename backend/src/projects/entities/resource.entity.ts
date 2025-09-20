@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsIn, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ResourceType, StorageProvider } from '@prisma/client';
+import { ResourceType, StorageProvider, ResourceStatus } from '@prisma/client';
 
 export class ResourceEntity {
   @ApiProperty({
@@ -45,6 +45,15 @@ export class ResourceEntity {
   @IsString()
   @IsNotEmpty()
   projectId: string;
+
+  @ApiProperty({
+    description: 'The annotation status of the resource',
+    enum: ResourceStatus,
+    example: ResourceStatus.PENDING_ANNOTATION,
+  })
+  @IsIn(Object.values(ResourceStatus))
+  @IsNotEmpty()
+  status: ResourceStatus;
 
   @ApiProperty({
     description: 'The creation timestamp of the resource',

@@ -24,6 +24,7 @@ import { CreateResourceResponseDto } from './dto/create-resource.response.dto';
 import { GetProjectResponseDto } from './dto/get-project.response.dto';
 import { ListProjectsResponseDto } from './dto/list-projects.response.dto';
 import { ListResourcesResponseDto } from './dto/list-resources.response.dto';
+import { ListAnnotationsResponseDto } from './dto/list-annotations.response.dto';
 import { UploadFileDto } from '../datasets/dto/upload-file.dto';
 import { UploadFileResponseDto } from '../datasets/dto/upload-file.response.dto';
 
@@ -449,6 +450,88 @@ export class ProjectsController {
         throw new InternalServerErrorException('Failed to list resources');
       default:
         throw new InternalServerErrorException('Failed to list resources');
+    }
+  }
+
+  @Get(':id/annotations')
+  @ApiOperation({
+    summary: 'List project annotations',
+    description:
+      'Get all annotations for a project with resource status information and pagination',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page (default: 10)',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Annotations retrieved successfully',
+    type: ListAnnotationsResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Project not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Project not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to list annotations',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to list annotations' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async listAnnotations(
+    @Param('id') projectId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<ListAnnotationsResponseDto> {
+    const result = await this.projectsService.listAnnotations(
+      projectId,
+      page || 1,
+      limit || 10,
+    );
+
+    const [listData, error] = result.toTuple();
+
+    if (!error) {
+      return listData;
+    }
+
+    switch (error.type) {
+      case 'project-error':
+        if (error.message === 'Project not found') {
+          throw new NotFoundException('Project not found');
+        }
+        throw new InternalServerErrorException('Failed to list annotations');
+      default:
+        throw new InternalServerErrorException('Failed to list annotations');
     }
   }
 }

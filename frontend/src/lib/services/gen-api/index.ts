@@ -7,6 +7,7 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { AnnotationWithResourceStatusDto } from './models/AnnotationWithResourceStatusDto';
 export type { CreateProjectDto } from './models/CreateProjectDto';
 export type { CreateProjectResponseDto } from './models/CreateProjectResponseDto';
 export type { CreateResourceDto } from './models/CreateResourceDto';
@@ -14,6 +15,7 @@ export type { CreateResourceResponseDto } from './models/CreateResourceResponseD
 export type { DatasetEntity } from './models/DatasetEntity';
 export type { GetDatasetResponseDto } from './models/GetDatasetResponseDto';
 export type { GetProjectResponseDto } from './models/GetProjectResponseDto';
+export type { ListAnnotationsResponseDto } from './models/ListAnnotationsResponseDto';
 export type { ListProjectsResponseDto } from './models/ListProjectsResponseDto';
 export type { ListResourcesResponseDto } from './models/ListResourcesResponseDto';
 export type { ProjectEntity } from './models/ProjectEntity';

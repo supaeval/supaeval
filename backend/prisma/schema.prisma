@@ -97,7 +97,6 @@ model DatasetRecord {
   resourceId String   @unique
   resource   Resource @relation(fields: [resourceId], references: [id])
 
-  annotations Annotation[]
   comments Comment[]
 
   status RecordStatus @default(DRAFT)
@@ -109,8 +108,8 @@ model DatasetRecord {
 model Annotation {
   id        String   @id @default(uuid())
 
-  datasetRecordId String
-  datasetRecord   DatasetRecord @relation(fields: [datasetRecordId], references: [id])
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id])
 
   keyValuePairs AnnotationKeyValuePair[]
   
@@ -154,6 +153,12 @@ enum StorageProvider {
   AZURE
 }
 
+enum ResourceStatus {
+  PENDING_ANNOTATION
+  ANNOTATING
+  ANNOTATED
+}
+
 model Resource {
   id        String   @id @default(uuid())
 
@@ -168,5 +173,8 @@ model Resource {
   projectId String
   project   Project @relation(fields: [projectId], references: [id])
 
+  annotations Annotation[]
+
+  status ResourceStatus @default(PENDING_ANNOTATION)
   records DatasetRecord[]
 }
