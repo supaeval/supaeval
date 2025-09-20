@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateResourceDto } from './dto/create-resource.dto';
 import { GetProjectResponseDto } from './dto/get-project.response.dto';
+import { ListResourcesResponseDto } from './dto/list-resources.response.dto';
+import { ResourceWithSignedUrlDto } from './dto/resource-with-signed-url.dto';
 import { ProjectEntity } from './entities/project.entity';
+import { ResourceEntity } from './entities/resource.entity';
 import {
   CreateProjectError,
+  CreateResourceError,
   UserNotFoundError,
   OrganizationNotFoundError,
   ProjectError,
+  ResourceError,
 } from './projects.errors';
 import { Result } from 'typescript-result';
 import { ListResponseData } from '../common/interfaces/list-response.interface';
@@ -178,7 +184,6 @@ export class ProjectsService {
 
   async generateUploadUrl(
     projectId: string,
-    datasetId: string,
     fileName: string,
     contentType: string,
   ): Promise<
@@ -188,23 +193,9 @@ export class ProjectsService {
     >
   > {
     try {
-      // Verify dataset exists and belongs to the project
-      const dataset = await this.getDatasetByProjectAndDatasetId(
-        projectId,
-        datasetId,
-      );
-
-      if (!dataset) {
-        return Result.error(
-          new ProjectError(
-            'Dataset not found or does not belong to the specified project',
-          ),
-        );
-      }
-
       // Generate unique file name with project and dataset context
       const timestamp = Date.now();
-      const uniqueFileName = `projects/${projectId}/datasets/${datasetId}/${timestamp}-${fileName}`;
+      const uniqueFileName = `projects/${projectId}/${timestamp}-${fileName}`;
 
       // Generate signed upload URL using the file upload service
       const signedUrl = await this.fileUploadService.signUploadUrl(
@@ -220,6 +211,120 @@ export class ProjectsService {
       });
     } catch (error) {
       return Result.error(new ProjectError('Failed to generate upload URL'));
+    }
+  }
+
+  async createResource(
+    projectId: string,
+    createResourceDto: CreateResourceDto,
+    userId: string,
+  ): Promise<Result<ResourceEntity, CreateResourceError>> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return Result.error(new UserNotFoundError('User not found'));
+    }
+
+    // Verify project exists and belongs to user's organization
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        organization: true,
+      },
+    });
+
+    if (!project) {
+      return Result.error(new ProjectError('Project not found'));
+    }
+
+    if (project.organizationId !== user.organizationId) {
+      return Result.error(new ProjectError('Project not found'));
+    }
+
+    const resource = await this.prisma.resource.create({
+      data: {
+        type: createResourceDto.type,
+        storageProvider: createResourceDto.storageProvider,
+        storageKey: createResourceDto.storageKey,
+        projectId: projectId,
+      },
+    });
+
+    return Result.ok(resource);
+  }
+
+  async listResources(
+    projectId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<
+    Result<ListResponseData<ResourceWithSignedUrlDto>, CreateProjectError>
+  > {
+    try {
+      // Check if project exists
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) {
+        return Result.error(new ProjectError('Project not found'));
+      }
+
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+
+      // Get total count
+      const totalCount = await this.prisma.resource.count({
+        where: {
+          projectId: projectId,
+        },
+      });
+
+      // Get resources with pagination
+      const resources = await this.prisma.resource.findMany({
+        where: {
+          projectId: projectId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      });
+
+      // Generate signed download URLs for each resource
+      const resourcesWithSignedUrls: ResourceWithSignedUrlDto[] =
+        await Promise.all(
+          resources.map(async (resource) => {
+            const signedDownloadUrl =
+              await this.fileUploadService.getDownloadUrl(
+                resource.storageKey,
+                3600, // 1 hour expiration
+              );
+
+            return {
+              ...resource,
+              signedDownloadUrl,
+            } as ResourceWithSignedUrlDto;
+          }),
+        );
+
+      // Calculate next page
+      const nextPage = skip + limit < totalCount ? page + 1 : null;
+
+      const responseData: ListResponseData<ResourceWithSignedUrlDto> = {
+        items: resourcesWithSignedUrls,
+        count: totalCount,
+        page,
+        nextPage,
+      };
+
+      return Result.ok(responseData);
+    } catch (error) {
+      return Result.error(new ProjectError('Failed to list resources'));
     }
   }
 }

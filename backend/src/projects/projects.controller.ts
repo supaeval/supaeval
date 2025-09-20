@@ -18,9 +18,12 @@ import {
 } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateResourceDto } from './dto/create-resource.dto';
 import { CreateProjectResponseDto } from './dto/create-project.response.dto';
+import { CreateResourceResponseDto } from './dto/create-resource.response.dto';
 import { GetProjectResponseDto } from './dto/get-project.response.dto';
 import { ListProjectsResponseDto } from './dto/list-projects.response.dto';
+import { ListResourcesResponseDto } from './dto/list-resources.response.dto';
 import { UploadFileDto } from '../datasets/dto/upload-file.dto';
 import { UploadFileResponseDto } from '../datasets/dto/upload-file.response.dto';
 
@@ -248,76 +251,13 @@ export class ProjectsController {
     }
   }
 
-  @Post(':projectId/datasets/:datasetId/upload')
-  @ApiOperation({
-    summary: 'Upload file to project dataset',
-    description:
-      'Generate a signed URL for uploading a file to the project dataset',
-  })
-  @ApiParam({
-    name: 'projectId',
-    description: 'The ID of the project',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiParam({
-    name: 'datasetId',
-    description: 'The ID of the dataset',
-    example: '456e7890-e89b-12d3-a456-426614174001',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Upload URL generated successfully',
-    type: UploadFileResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - invalid input data',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Validation failed' },
-        error: { type: 'string', example: 'Bad Request' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 422,
-    description:
-      'Dataset not found or does not belong to the specified project',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 422 },
-        message: {
-          type: 'string',
-          example:
-            'Dataset not found or does not belong to the specified project',
-        },
-        error: { type: 'string', example: 'Unprocessable Entity' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Failed to generate upload URL',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 500 },
-        message: { type: 'string', example: 'Failed to generate upload URL' },
-        error: { type: 'string', example: 'Internal Server Error' },
-      },
-    },
-  })
+  @Post(':projectId/upload')
   async uploadFile(
     @Param('projectId') projectId: string,
-    @Param('datasetId') datasetId: string,
     @Body() uploadFileDto: UploadFileDto,
   ): Promise<UploadFileResponseDto> {
     const result = await this.projectsService.generateUploadUrl(
       projectId,
-      datasetId,
       uploadFileDto.fileName,
       uploadFileDto.contentType,
     );
@@ -333,6 +273,182 @@ export class ProjectsController {
         throw new UnprocessableEntityException(error.message);
       default:
         throw new InternalServerErrorException('Failed to generate upload URL');
+    }
+  }
+
+  @Post(':id/resources')
+  @ApiOperation({
+    summary: 'Create resource for project',
+    description: 'Create a new resource for the specified project',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Resource created successfully',
+    type: CreateResourceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid input data',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Validation failed' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Project not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Project not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 422 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Unprocessable Entity' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to create resource',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to create resource' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async createResource(
+    @Param('id') projectId: string,
+    @Body() createResourceDto: CreateResourceDto,
+  ): Promise<CreateResourceResponseDto> {
+    const result = await this.projectsService.createResource(
+      projectId,
+      createResourceDto,
+      mockUserId,
+    );
+
+    const [resource, error] = result.toTuple();
+
+    if (!error) {
+      return resource;
+    }
+
+    switch (error.type) {
+      case 'user-not-found-error':
+        throw new UnprocessableEntityException('User not found');
+      case 'project-error':
+        if (error.message === 'Project not found') {
+          throw new NotFoundException('Project not found');
+        }
+        throw new InternalServerErrorException('Failed to create resource');
+      case 'resource-error':
+        throw new InternalServerErrorException('Failed to create resource');
+      default:
+        throw new InternalServerErrorException('Failed to create resource');
+    }
+  }
+
+  @Get(':id/resources')
+  @ApiOperation({
+    summary: 'List project resources',
+    description:
+      'Get all resources for a project with signed download URLs and pagination',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page (default: 10)',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resources retrieved successfully',
+    type: ListResourcesResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Project not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Project not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to list resources',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to list resources' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async listResources(
+    @Param('id') projectId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<ListResourcesResponseDto> {
+    const result = await this.projectsService.listResources(
+      projectId,
+      page || 1,
+      limit || 100,
+    );
+
+    const [listData, error] = result.toTuple();
+
+    if (!error) {
+      return listData;
+    }
+
+    switch (error.type) {
+      case 'project-error':
+        if (error.message === 'Project not found') {
+          throw new NotFoundException('Project not found');
+        }
+        throw new InternalServerErrorException('Failed to list resources');
+      default:
+        throw new InternalServerErrorException('Failed to list resources');
     }
   }
 }

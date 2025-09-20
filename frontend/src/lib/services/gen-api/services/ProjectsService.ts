@@ -4,8 +4,11 @@
 /* eslint-disable */
 import type { CreateProjectDto } from '../models/CreateProjectDto';
 import type { CreateProjectResponseDto } from '../models/CreateProjectResponseDto';
+import type { CreateResourceDto } from '../models/CreateResourceDto';
+import type { CreateResourceResponseDto } from '../models/CreateResourceResponseDto';
 import type { GetProjectResponseDto } from '../models/GetProjectResponseDto';
 import type { ListProjectsResponseDto } from '../models/ListProjectsResponseDto';
+import type { ListResourcesResponseDto } from '../models/ListResourcesResponseDto';
 import type { UploadFileDto } from '../models/UploadFileDto';
 import type { UploadFileResponseDto } from '../models/UploadFileResponseDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -94,39 +97,95 @@ export class ProjectsService {
         });
     }
     /**
-     * Upload file to project dataset
-     * Generate a signed URL for uploading a file to the project dataset
-     * @returns UploadFileResponseDto Upload URL generated successfully
+     * @returns UploadFileResponseDto
      * @throws ApiError
      */
     public static projectsControllerUploadFile({
         projectId,
-        datasetId,
+        requestBody,
+    }: {
+        projectId: string,
+        requestBody: UploadFileDto,
+    }): CancelablePromise<UploadFileResponseDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/projects/{projectId}/upload',
+            path: {
+                'projectId': projectId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Create resource for project
+     * Create a new resource for the specified project
+     * @returns CreateResourceResponseDto Resource created successfully
+     * @throws ApiError
+     */
+    public static projectsControllerCreateResource({
+        id,
         requestBody,
     }: {
         /**
          * The ID of the project
          */
-        projectId: string,
-        /**
-         * The ID of the dataset
-         */
-        datasetId: string,
-        requestBody: UploadFileDto,
-    }): CancelablePromise<UploadFileResponseDto> {
+        id: string,
+        requestBody: CreateResourceDto,
+    }): CancelablePromise<CreateResourceResponseDto> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/projects/{projectId}/datasets/{datasetId}/upload',
+            url: '/projects/{id}/resources',
             path: {
-                'projectId': projectId,
-                'datasetId': datasetId,
+                'id': id,
             },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
                 400: `Bad request - invalid input data`,
-                422: `Dataset not found or does not belong to the specified project`,
-                500: `Failed to generate upload URL`,
+                404: `Project not found`,
+                422: `User not found`,
+                500: `Failed to create resource`,
+            },
+        });
+    }
+    /**
+     * List project resources
+     * Get all resources for a project with signed download URLs and pagination
+     * @returns ListResourcesResponseDto Resources retrieved successfully
+     * @throws ApiError
+     */
+    public static projectsControllerListResources({
+        id,
+        page,
+        limit,
+    }: {
+        /**
+         * The ID of the project
+         */
+        id: string,
+        /**
+         * Page number (default: 1)
+         */
+        page?: number,
+        /**
+         * Number of items per page (default: 10)
+         */
+        limit?: number,
+    }): CancelablePromise<ListResourcesResponseDto> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/projects/{id}/resources',
+            path: {
+                'id': id,
+            },
+            query: {
+                'page': page,
+                'limit': limit,
+            },
+            errors: {
+                404: `Project not found`,
+                500: `Failed to list resources`,
             },
         });
     }

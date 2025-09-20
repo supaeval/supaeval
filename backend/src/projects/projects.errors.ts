@@ -10,7 +10,17 @@ export class ProjectError extends Error {
   readonly type = 'project-error';
 }
 
+export class ResourceError extends Error {
+  readonly type = 'resource-error';
+}
+
 export type CreateProjectError =
   | UserNotFoundError
   | OrganizationNotFoundError
   | ProjectError;
+
+export type CreateResourceError =
+  | UserNotFoundError
+  | OrganizationNotFoundError
+  | ProjectError
+  | ResourceError;

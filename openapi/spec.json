@@ -278,28 +278,15 @@
         ]
       }
     },
-    "/projects/{projectId}/datasets/{datasetId}/upload": {
+    "/projects/{projectId}/upload": {
       "post": {
-        "description": "Generate a signed URL for uploading a file to the project dataset",
         "operationId": "ProjectsController_uploadFile",
         "parameters": [
           {
             "name": "projectId",
             "required": true,
             "in": "path",
-            "description": "The ID of the project",
             "schema": {
-              "example": "123e4567-e89b-12d3-a456-426614174000",
-              "type": "string"
-            }
-          },
-          {
-            "name": "datasetId",
-            "required": true,
-            "in": "path",
-            "description": "The ID of the dataset",
-            "schema": {
-              "example": "456e7890-e89b-12d3-a456-426614174001",
               "type": "string"
             }
           }
@@ -316,11 +303,54 @@
         },
         "responses": {
           "201": {
-            "description": "Upload URL generated successfully",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadFileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/projects/{id}/resources": {
+      "post": {
+        "description": "Create a new resource for the specified project",
+        "operationId": "ProjectsController_createResource",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the project",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResourceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resource created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateResourceResponseDto"
                 }
               }
             }
@@ -349,8 +379,32 @@
               }
             }
           },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Project not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Found"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Dataset not found or does not belong to the specified project",
+            "description": "User not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -362,7 +416,7 @@
                     },
                     "message": {
                       "type": "string",
-                      "example": "Dataset not found or does not belong to the specified project"
+                      "example": "User not found"
                     },
                     "error": {
                       "type": "string",
@@ -374,7 +428,7 @@
             }
           },
           "500": {
-            "description": "Failed to generate upload URL",
+            "description": "Failed to create resource",
             "content": {
               "application/json": {
                 "schema": {
@@ -386,7 +440,7 @@
                     },
                     "message": {
                       "type": "string",
-                      "example": "Failed to generate upload URL"
+                      "example": "Failed to create resource"
                     },
                     "error": {
                       "type": "string",
@@ -398,7 +452,107 @@
             }
           }
         },
-        "summary": "Upload file to project dataset",
+        "summary": "Create resource for project",
+        "tags": [
+          "projects"
+        ]
+      },
+      "get": {
+        "description": "Get all resources for a project with signed download URLs and pagination",
+        "operationId": "ProjectsController_listResources",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the project",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resources retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResourcesResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Project not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to list resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to list resources"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List project resources",
         "tags": [
           "projects"
         ]
@@ -843,6 +997,200 @@
           "url",
           "fields",
           "expiresIn"
+        ]
+      },
+      "CreateResourceDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE"
+            ],
+            "description": "The type of the resource",
+            "example": "IMAGE"
+          },
+          "storageProvider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GCS",
+              "S3",
+              "AZURE"
+            ],
+            "description": "The storage provider for the resource",
+            "example": "GCS"
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "The storage key/path for the resource",
+            "example": "projects/123/datasets/456/uploaded-image.jpg"
+          }
+        },
+        "required": [
+          "type",
+          "storageProvider",
+          "storageKey"
+        ]
+      },
+      "CreateResourceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the resource",
+            "example": "789e0123-e89b-12d3-a456-426614174002"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE"
+            ],
+            "description": "The type of the resource",
+            "example": "IMAGE"
+          },
+          "storageProvider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GCS",
+              "S3",
+              "AZURE"
+            ],
+            "description": "The storage provider for the resource",
+            "example": "GCS"
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "The storage key/path for the resource",
+            "example": "projects/123/datasets/456/uploaded-image.jpg"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "The ID of the project this resource belongs to",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp of the resource",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp of the resource",
+            "example": "2024-03-14T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "storageProvider",
+          "storageKey",
+          "projectId",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ResourceWithSignedUrlDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the resource",
+            "example": "789e0123-e89b-12d3-a456-426614174002"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE"
+            ],
+            "description": "The type of the resource",
+            "example": "IMAGE"
+          },
+          "storageProvider": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "GCS",
+              "S3",
+              "AZURE"
+            ],
+            "description": "The storage provider for the resource",
+            "example": "GCS"
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "The storage key/path for the resource",
+            "example": "projects/123/datasets/456/uploaded-image.jpg"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "The ID of the project this resource belongs to",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp of the resource",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp of the resource",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "signedDownloadUrl": {
+            "type": "string",
+            "description": "The signed download URL for the resource",
+            "example": "https://storage.googleapis.com/bucket/projects/123/datasets/456/uploaded-image.jpg?X-Goog-Algorithm=..."
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "storageProvider",
+          "storageKey",
+          "projectId",
+          "createdAt",
+          "updatedAt",
+          "signedDownloadUrl"
+        ]
+      },
+      "ListResourcesResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Array of resources with signed download URLs",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceWithSignedUrlDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "description": "Total count of items",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number",
+            "example": 1
+          },
+          "nextPage": {
+            "type": "number",
+            "nullable": true,
+            "description": "Next page number, null if no next page",
+            "example": 2
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "nextPage"
         ]
       },
       "GetDatasetResponseDto": {

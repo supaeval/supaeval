@@ -11,7 +11,7 @@ interface ImageUploadProps {
   maxSize?: number; // in bytes
   acceptedFileTypes?: string[];
   className?: string;
-  showAddToDatasetButton?: boolean;
+  showUploadButton?: boolean;
   onAddToDataset?: (files: File[]) => Promise<void>;
 }
 
@@ -33,7 +33,7 @@ export const ImageUpload = ({
   maxSize = 5 * 1024 * 1024, // 5MB
   acceptedFileTypes = ["image/jpeg", "image/png", "image/webp"],
   className,
-  showAddToDatasetButton = false,
+  showUploadButton = false,
   onAddToDataset,
 }: ImageUploadProps) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -92,18 +92,39 @@ export const ImageUpload = ({
     setUploadedFiles([]);
   };
 
-  const handleAddToDataset = async () => {
-    if (!onAddToDataset || selectedFiles.length === 0) return;
+  const handleFilesUpload = async () => {
+    if (selectedFiles.length === 0) return;
 
-    const filesToUpload = selectedFiles.map((sf) => sf.file);
+    setIsUploading(true);
 
     try {
-      await onAddToDataset(filesToUpload);
-      // Clear selected files after successful upload
-      clearSelectedFiles();
+      // Convert selected files to File array
+      const files = selectedFiles.map((selectedFile) => selectedFile.file);
+
+      // Call the onAddToDataset callback if provided
+      if (onAddToDataset) {
+        await onAddToDataset(files);
+      } else {
+        // Fallback to the original onUpload callback
+        await onUpload(files);
+      }
+
+      // Move files from selected to uploaded
+      const newUploadedFiles: UploadedFile[] = selectedFiles.map(
+        (selectedFile) => ({
+          file: selectedFile.file,
+          preview: selectedFile.preview,
+          uploading: false,
+        }),
+      );
+
+      setUploadedFiles((prev) => [...prev, ...newUploadedFiles]);
+      setSelectedFiles([]);
     } catch (error) {
-      // Error handling is done in the parent component
-      throw error;
+      console.error("Upload failed:", error);
+      // Handle error - could show error state for individual files
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -196,14 +217,13 @@ export const ImageUpload = ({
             ))}
           </div>
 
-          {/* Add to Dataset Button */}
-          {showAddToDatasetButton && (
+          {showUploadButton && (
             <div className="flex justify-center pt-4">
               <button
-                onClick={handleAddToDataset}
+                onClick={handleFilesUpload}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Add to Dataset ({selectedFiles.length} files)
+                Upload ({selectedFiles.length} files)
               </button>
             </div>
           )}
