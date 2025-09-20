@@ -1,59 +1,91 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { getProjectUsecase } from "@/core/application";
-import { ProjectEntity } from "@/lib/services/gen-api";
+import { useRouter } from "next/navigation";
+import { getDatasetUsecase } from "@/core/application";
+import { useCurrentProjectStore } from "@/stores/current-project.store";
 import { ProjectSubNav } from "@/components/ui/project-sub-nav";
 import { ArrowLeft, Database, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function DatasetPage() {
-  const params = useParams();
   const router = useRouter();
-  const [project, setProject] = useState<ProjectEntity | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { project } = useCurrentProjectStore();
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        setLoading(true);
-        const foundProject = await getProjectUsecase.execute(
-          params.id as string,
-        );
-        setProject(foundProject);
-      } catch (err) {
-        console.error("Error fetching project:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Get the first dataset from the project
+  const firstDataset = project?.datasets?.[0];
 
-    if (params.id) {
-      fetchProject();
-    }
-  }, [params.id]);
+  // Fetch dataset details using the getDatasetUsecase
+  const {
+    data: dataset,
+    isLoading: datasetLoading,
+    error: datasetError,
+  } = useQuery({
+    queryKey: ["dataset", firstDataset?.id],
+    queryFn: () => getDatasetUsecase.execute({ id: firstDataset!.id }),
+    enabled: !!firstDataset?.id,
+  });
 
-  if (loading) {
+  // Project data is guaranteed to be available due to ProjectOnlyGuard
+  if (!project) {
+    return null;
+  }
+
+  // Show dataset loading state with skeleton
+  if (datasetLoading) {
     return (
       <div className="flex h-full">
-        <div className="w-48 bg-gray-100 border-r border-gray-300" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading...</span>
+        <ProjectSubNav projectId={project.id} />
+        <div className="flex-1 overflow-auto">
+          <div className="p-8">
+            {/* Header skeleton */}
+            <div className="mb-8">
+              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mb-4" />
+              <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2" />
+              <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
+            </div>
+
+            {/* Dataset overview skeleton */}
+            <div className="bg-white rounded-lg border p-8">
+              <div className="text-center">
+                {/* Icon skeleton */}
+                <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto mb-4 animate-pulse" />
+
+                {/* Title skeleton */}
+                <div className="h-6 w-48 bg-gray-200 rounded mx-auto mb-2 animate-pulse" />
+
+                {/* Description skeleton */}
+                <div className="h-4 w-80 bg-gray-200 rounded mx-auto mb-6 animate-pulse" />
+
+                {/* Dataset version skeleton */}
+                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="h-6 w-32 bg-gray-200 rounded mx-auto animate-pulse" />
+                </div>
+
+                {/* Stats grid skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="h-8 w-12 bg-gray-200 rounded mx-auto mb-2 animate-pulse" />
+                      <div className="h-4 w-20 bg-gray-200 rounded mx-auto animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!project) {
+  // Show dataset error state
+  if (datasetError) {
     return (
       <div className="flex h-full">
-        <div className="w-48 bg-gray-100 border-r border-gray-300" />
+        <ProjectSubNav projectId={project.id} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-red-600 mb-4">Project not found</p>
+            <p className="text-red-600 mb-4">Failed to load dataset</p>
             <button
               onClick={() => router.push("/projects")}
               className="text-blue-600 hover:text-blue-800 text-sm"
@@ -97,6 +129,42 @@ export default function DatasetPage() {
               <p className="text-gray-600 mb-6">
                 Your uploaded data will appear here once processed
               </p>
+
+              {/* Dataset Version Display */}
+              {datasetLoading && (
+                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-gray-600">
+                      Loading dataset...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {dataset && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-sm text-blue-700 font-medium">
+                      Dataset Version:
+                    </span>
+                    <span className="text-lg font-bold text-blue-900">
+                      {dataset.version}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {!dataset && !datasetLoading && !firstDataset && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-sm text-yellow-700">
+                      No dataset found for this project
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-2xl font-bold text-gray-900">0</p>

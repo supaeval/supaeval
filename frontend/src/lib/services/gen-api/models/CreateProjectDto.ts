@@ -14,6 +14,6 @@ export type CreateProjectDto = {
     /**
      * The type of the project
      */
-    type: 'IMAGE_EXTRACTION';
+    type: 'MULTIMODAL' | 'IMAGE_EXTRACTION' | 'LLM_TEXT' | 'INSTANCE_SEGMENTATION';
 };
 

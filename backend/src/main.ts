@@ -7,6 +7,8 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 import { validateEnv } from './config/validate-env';
 import { ProjectsModule } from './projects/projects.module';
+import { DatasetsModule } from './datasets/datasets.module';
+import { FileUploadModule } from './file-upload';
 
 const printOASToFile = () => {
   const env = validateEnv(process.env);
@@ -49,7 +51,7 @@ async function bootstrap() {
 
   const documentFactory = () =>
     SwaggerModule.createDocument(app, config, {
-      include: [ProjectsModule],
+      include: [ProjectsModule, DatasetsModule, FileUploadModule],
       extraModels: [],
     });
 

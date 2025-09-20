@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DatasetEntity } from './DatasetEntity';
 export type CreateProjectResponseDto = {
     /**
      * The unique identifier of the project
@@ -18,7 +19,7 @@ export type CreateProjectResponseDto = {
     /**
      * The type of the project
      */
-    type: 'IMAGE_EXTRACTION';
+    type: 'MULTIMODAL' | 'IMAGE_EXTRACTION' | 'LLM_TEXT' | 'INSTANCE_SEGMENTATION';
     /**
      * The creation timestamp
      */
@@ -35,5 +36,9 @@ export type CreateProjectResponseDto = {
      * The user ID who created this project
      */
     createdById: string;
+    /**
+     * The datasets associated with this project
+     */
+    datasets?: Array<DatasetEntity>;
 };
 

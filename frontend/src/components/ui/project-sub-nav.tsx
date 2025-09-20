@@ -10,26 +10,26 @@ interface ProjectSubNavProps {
 
 const navItems = [
   {
-    id: 'upload',
-    label: 'Upload data',
+    id: "upload",
+    label: "Upload data",
     icon: Upload,
     href: (id: string) => `/projects/${id}/upload`,
   },
   {
-    id: 'dataset',
-    label: 'Dataset',
+    id: "dataset",
+    label: "Dataset",
     icon: Database,
     href: (id: string) => `/projects/${id}/dataset`,
   },
   {
-    id: 'extraction',
-    label: 'Extraction',
+    id: "extraction",
+    label: "Extraction",
     icon: FileText,
     href: (id: string) => `/projects/${id}/extraction`,
   },
   {
-    id: 'evaluation',
-    label: 'Evaluation',
+    id: "evaluation",
+    label: "Evaluation",
     icon: BarChart3,
     href: (id: string) => `/projects/${id}/evaluation`,
   },
@@ -44,7 +44,7 @@ export function ProjectSubNav({ projectId, className }: ProjectSubNavProps) {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href(projectId);
-          
+
           return (
             <Link
               key={item.id}
@@ -53,7 +53,7 @@ export function ProjectSubNav({ projectId, className }: ProjectSubNavProps) {
                 "flex items-center space-x-2 rounded-md px-2 py-2 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-blue-600 text-white"
-                  : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
+                  : "text-gray-700 hover:bg-gray-200 hover:text-gray-900",
               )}
             >
               <Icon className="h-4 w-4" />

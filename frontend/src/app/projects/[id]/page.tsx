@@ -1,47 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getProjectUsecase } from "@/core/application";
-import { Project } from "@/core/usecases/get-projects.usecase";
+import { useRouter } from "next/navigation";
+import { useCurrentProjectStore } from "@/stores/current-project.store";
 import { ProjectSubNav } from "@/components/ui/project-sub-nav";
-import { ArrowLeft, Calendar, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 
 export default function ProjectDetailPage() {
-  const params = useParams();
   const router = useRouter();
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { project } = useCurrentProjectStore();
 
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const foundProject = await getProjectUsecase.execute(
-          params.id as string,
-        );
-
-        if (foundProject) {
-          setProject(foundProject);
-        } else {
-          setError("Project not found");
-        }
-      } catch (err) {
-        setError("Failed to load project");
-        console.error("Error fetching project:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (params.id) {
-      fetchProject();
-    }
-  }, [params.id]);
-
-  const getStatusColor = (status: Project["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800";
@@ -62,35 +30,9 @@ export default function ProjectDetailPage() {
     }).format(date);
   };
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading project...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">{error || "Project not found"}</p>
-            <button
-              onClick={() => router.push("/projects")}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              Back to projects
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  // Project data is guaranteed to be available due to ProjectOnlyGuard
+  if (!project) {
+    return null;
   }
 
   return (

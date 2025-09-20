@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { DatasetEntity } from './DatasetEntity';
-export type ProjectEntity = {
+export type GetProjectResponseDto = {
     /**
      * The unique identifier of the project
      */
@@ -21,6 +21,14 @@ export type ProjectEntity = {
      */
     type: 'MULTIMODAL' | 'IMAGE_EXTRACTION' | 'LLM_TEXT' | 'INSTANCE_SEGMENTATION';
     /**
+     * The ID of the organization this project belongs to
+     */
+    organizationId: string;
+    /**
+     * The ID of the user who created this project
+     */
+    createdById: string;
+    /**
      * The creation timestamp
      */
     createdAt: string;
@@ -28,14 +36,6 @@ export type ProjectEntity = {
      * The last update timestamp
      */
     updatedAt: string;
-    /**
-     * The organization ID that owns this project
-     */
-    organizationId: string;
-    /**
-     * The user ID who created this project
-     */
-    createdById: string;
     /**
      * The datasets associated with this project
      */

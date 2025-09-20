@@ -196,6 +196,88 @@
         ]
       }
     },
+    "/projects/{id}": {
+      "get": {
+        "description": "Retrieve a project by its unique identifier including its datasets",
+        "operationId": "ProjectsController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the project",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetProjectResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Project not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to fetch project"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get project by ID",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/projects/{projectId}/datasets/{datasetId}/upload": {
       "post": {
         "description": "Generate a signed URL for uploading a file to the project dataset",
@@ -319,6 +401,88 @@
         "summary": "Upload file to project dataset",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/datasets/{id}": {
+      "get": {
+        "description": "Retrieve a dataset by its unique identifier without fetching records",
+        "operationId": "DatasetsController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "The ID of the dataset",
+            "schema": {
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dataset retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDatasetResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dataset not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Dataset not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Not Found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch dataset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to fetch dataset"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get dataset by ID",
+        "tags": [
+          "datasets"
         ]
       }
     }
@@ -567,6 +731,76 @@
           "nextPage"
         ]
       },
+      "GetProjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the project",
+            "example": "My Awesome Project"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the project",
+            "example": "A project for extracting data from images"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of the project",
+            "enum": [
+              "MULTIMODAL",
+              "IMAGE_EXTRACTION",
+              "LLM_TEXT",
+              "INSTANCE_SEGMENTATION"
+            ],
+            "example": "MULTIMODAL"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The ID of the organization this project belongs to",
+            "example": "456e7890-e89b-12d3-a456-426614174001"
+          },
+          "createdById": {
+            "type": "string",
+            "description": "The ID of the user who created this project",
+            "example": "789e0123-e89b-12d3-a456-426614174002"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "datasets": {
+            "description": "The datasets associated with this project",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatasetEntity"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "organizationId",
+          "createdById",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "UploadFileDto": {
         "type": "object",
         "properties": {
@@ -609,6 +843,45 @@
           "url",
           "fields",
           "expiresIn"
+        ]
+      },
+      "GetDatasetResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the dataset",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "projectId": {
+            "type": "string",
+            "description": "The ID of the project this dataset belongs to",
+            "example": "456e7890-e89b-12d3-a456-426614174001"
+          },
+          "version": {
+            "type": "number",
+            "description": "The version number of the dataset",
+            "example": 1
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "createdAt",
+          "updatedAt"
         ]
       }
     }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { GetProjectResponseDto } from './dto/get-project.response.dto';
 import { ProjectEntity } from './entities/project.entity';
 import {
   CreateProjectError,
@@ -121,6 +122,27 @@ export class ProjectsService {
       return Result.ok(responseData);
     } catch (error) {
       return Result.error(new ProjectError('Failed to list projects'));
+    }
+  }
+
+  async getById(
+    projectId: string,
+  ): Promise<Result<GetProjectResponseDto, ProjectError>> {
+    try {
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          datasets: true,
+        },
+      });
+
+      if (!project) {
+        return Result.error(new ProjectError('Project not found'));
+      }
+
+      return Result.ok(project as GetProjectResponseDto);
+    } catch (error) {
+      return Result.error(new ProjectError('Failed to fetch project'));
     }
   }
 

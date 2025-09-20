@@ -1,7 +1,7 @@
 export const ProjectsRoute = {
-  path: () => '/projects'
+  path: () => "/projects",
 };
 
 export const ProjectDetailRoute = {
-  path: (id: string) => `/projects/${id}`
+  path: (id: string) => `/projects/${id}`,
 };

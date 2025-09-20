@@ -5,6 +5,7 @@ import {
   Body,
   Query,
   Param,
+  NotFoundException,
   UnprocessableEntityException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -18,6 +19,7 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectResponseDto } from './dto/create-project.response.dto';
+import { GetProjectResponseDto } from './dto/get-project.response.dto';
 import { ListProjectsResponseDto } from './dto/list-projects.response.dto';
 import { UploadFileDto } from '../datasets/dto/upload-file.dto';
 import { UploadFileResponseDto } from '../datasets/dto/upload-file.response.dto';
@@ -183,6 +185,66 @@ export class ProjectsController {
         throw new UnprocessableEntityException('Organization not found');
       default:
         throw new InternalServerErrorException('Failed to list projects');
+    }
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get project by ID',
+    description:
+      'Retrieve a project by its unique identifier including its datasets',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'The ID of the project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Project retrieved successfully',
+    type: GetProjectResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Project not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'Project not found' },
+        error: { type: 'string', example: 'Not Found' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Failed to fetch project',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 500 },
+        message: { type: 'string', example: 'Failed to fetch project' },
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
+  })
+  async getById(@Param('id') id: string): Promise<GetProjectResponseDto> {
+    const result = await this.projectsService.getById(id);
+
+    const [project, error] = result.toTuple();
+
+    if (project) {
+      return project;
+    }
+
+    switch (error.type) {
+      case 'project-error':
+        if (error.message === 'Project not found') {
+          throw new NotFoundException(error.message);
+        }
+        throw new InternalServerErrorException('Failed to fetch project');
+      default:
+        throw new InternalServerErrorException('Failed to fetch project');
     }
   }
 

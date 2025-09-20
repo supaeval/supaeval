@@ -1,39 +1,16 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { getProjectUsecase } from "@/core/application";
-import { ProjectEntity } from "@/lib/services/gen-api";
+import { useRouter } from "next/navigation";
+import { useCurrentProjectStore } from "@/stores/current-project.store";
 import { ProjectSubNav } from "@/components/ui/project-sub-nav";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Upload } from "lucide-react";
+import { useState } from "react";
 
 export default function UploadDataPage() {
-  const params = useParams();
   const router = useRouter();
-  const [project, setProject] = useState<ProjectEntity | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { project } = useCurrentProjectStore();
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        setLoading(true);
-        const foundProject = await getProjectUsecase.execute(
-          params.id as string,
-        );
-        setProject(foundProject);
-      } catch (err) {
-        console.error("Error fetching project:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (params.id) {
-      fetchProject();
-    }
-  }, [params.id]);
 
   const handleAddToDataset = async (files: File[]) => {
     try {
@@ -60,37 +37,9 @@ export default function UploadDataPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-full">
-        <div className="w-48 bg-gray-100 border-r border-gray-300" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Project data is guaranteed to be available due to ProjectOnlyGuard
   if (!project) {
-    return (
-      <div className="flex h-full">
-        <div className="w-48 bg-gray-100 border-r border-gray-300" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Project not found</p>
-            <button
-              onClick={() => router.push("/projects")}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              Back to projects
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -131,7 +80,7 @@ export default function UploadDataPage() {
             )}
 
             <ImageUpload
-              onUpload={() => {}} // Not used in two-step process
+              onUpload={async () => {}} // Not used in two-step process
               onAddToDataset={handleAddToDataset}
               showAddToDatasetButton={true}
               maxFiles={20}
