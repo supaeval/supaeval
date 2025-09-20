@@ -6,21 +6,20 @@ alwaysApply: true
 
 When we ask to create an endpoint in the backend you always need to follow the following rules.
 
-
 - Add the endpoint into the corresponding controller.
 
 - For endpoint paths we use the slack style convention which is a mix between rest + imperative.
 
 - Add an operation summary and description to the controller. The summary is the name of the endpoint and the description is a short sentence explaining some details or business logic. Example: @ApiOperation({ summary: 'Abort a recensement', description: 'Delete a recensement and all its related data' })
 
-- If it is an endpoint expecting a body, make sure to create a DTO in the corresponding dto directory. DTO must be named like others example : create-sample.dto.ts 
+- If it is an endpoint expecting a body, make sure to create a DTO in the corresponding dto directory. DTO must be named like others example : create-sample.dto.ts
 
 - For the endpoint response, make sure to create a DTO as well and to explicitely type the response of the controller method with it.
 
 - Response DTOs will always be named as "do-something.response.dto.ts". Example :
 
 ```ts
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 import {
   IsString,
   IsEmail,
@@ -28,52 +27,52 @@ import {
   IsDate,
   IsIn,
   IsNotEmpty,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { Authorizations } from '@prisma/client';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { Authorizations } from "@prisma/client";
 
 export class CreateUserResponseDto {
   @ApiProperty({
-    description: 'The unique identifier of the user',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: "The unique identifier of the user",
+    example: "123e4567-e89b-12d3-a456-426614174000",
   })
   @IsString()
   @IsNotEmpty()
   id: string;
 
   @ApiProperty({
-    description: 'The first name of the user',
-    example: 'John',
+    description: "The first name of the user",
+    example: "John",
   })
   @IsString()
   @IsNotEmpty()
   firstName: string;
 
   @ApiProperty({
-    description: 'The last name of the user',
-    example: 'Doe',
+    description: "The last name of the user",
+    example: "Doe",
   })
   @IsString()
   @IsNotEmpty()
   lastName: string;
 
   @ApiProperty({
-    description: 'The email address of the user',
-    example: 'john.doe@example.com',
+    description: "The email address of the user",
+    example: "john.doe@example.com",
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
   @ApiProperty({
-    description: 'Whether the user account is active',
+    description: "Whether the user account is active",
     example: true,
   })
   @IsBoolean()
   isActive: boolean;
 
   @ApiProperty({
-    description: 'The authorization level for lab access',
+    description: "The authorization level for lab access",
     enum: Authorizations,
     example: Authorizations.NONE,
   })
@@ -81,7 +80,7 @@ export class CreateUserResponseDto {
   labAuthorization: Authorizations;
 
   @ApiProperty({
-    description: 'The authorization level for rec access',
+    description: "The authorization level for rec access",
     enum: Authorizations,
     example: Authorizations.NONE,
   })
@@ -89,7 +88,7 @@ export class CreateUserResponseDto {
   recAuthorization: Authorizations;
 
   @ApiProperty({
-    description: 'The authorization level for project access',
+    description: "The authorization level for project access",
     enum: Authorizations,
     example: Authorizations.NONE,
   })
@@ -97,16 +96,16 @@ export class CreateUserResponseDto {
   projectAuthorization: Authorizations;
 
   @ApiProperty({
-    description: 'The creation timestamp',
-    example: '2024-03-14T12:00:00.000Z',
+    description: "The creation timestamp",
+    example: "2024-03-14T12:00:00.000Z",
   })
   @IsDate()
   @Type(() => Date)
   createdAt: Date;
 
   @ApiProperty({
-    description: 'The last update timestamp',
-    example: '2024-03-14T12:00:00.000Z',
+    description: "The last update timestamp",
+    example: "2024-03-14T12:00:00.000Z",
   })
   @IsDate()
   @Type(() => Date)
@@ -118,7 +117,7 @@ export class CreateUserResponseDto {
 
 - For dtos, you need to add all required decorators such as @IsString(), @IsNullable(), @IsDate() etc. These decorator will help us to generate the documentation with swagger.
 
-- When there is no error that can be handled by a service, it's okay if the service returns an entity directly. However, when you need to handle errors in a service, the service method must return a Result<Entity, ErrorType>. The ErrorType must be defined in the resource.errors.ts file inside your resource directory. You can find example of what's already in the project. Example :
+- When there is no error that can be handled by a service, it's okay if the service returns an entity directly. However, when you need to handle errors in a service, the service method must return a Result<Entity, ErrorType> (typescript-result lib). The ErrorType must be defined in the resource.errors.ts file inside your resource directory. You can find example of what's already in the project. Example :
 
 ```ts
   async create(ownerId: string): Promise<Result<RecensementEntity, CreateRecensementError>> {
@@ -137,7 +136,7 @@ export class CreateUserResponseDto {
         recBy: { connect: { id: ownerId } },
         recDate: new Date(),
         status: RecStatus.DO,
-        nameOfExpectedSamples: [],    
+        nameOfExpectedSamples: [],
       },
     });
 
@@ -145,9 +144,9 @@ export class CreateUserResponseDto {
   }
 ```
 
-- When a service returns a Result<> instance then the controller must : 1. do a switch to handle all cases and 2. document the controller possible response for swagger. Example : 
+- When a service returns a Result<> instance then the controller must : 1. do a switch to handle all cases and 2. document the controller possible response for swagger. Example :
 
-```ts 
+```ts
   @Post()
   @ApiResponse({
     status: 201,
@@ -221,3 +220,180 @@ This allows us to type the enum in the client sdk.
   @Type(() => UpsertedFieldSheetResponseDto)
   fieldSheets: UpsertedFieldSheetResponseDto[];
 ```
+
+- Never use "as " to cast a response or an object. For example this `return project as CreateProjectResponseDto;` is strictly forbidden.
+
+## List Response Pattern
+
+- **ALWAYS** use the `ListResponseDto<T>` pattern for any endpoint that returns a list of items.
+
+- **Create a generic ListResponseDto** in `/src/common/dto/list-response.dto.ts`:
+
+```ts
+import { ApiProperty } from "@nestjs/swagger";
+import { IsArray, IsNumber, IsOptional } from "class-validator";
+import { Type } from "class-transformer";
+
+export class ListResponseDto<T> {
+  @ApiProperty({
+    description: "Array of items",
+    isArray: true,
+  })
+  @IsArray()
+  items: T[];
+
+  @ApiProperty({
+    description: "Total count of items",
+    example: 25,
+  })
+  @IsNumber()
+  count: number;
+
+  @ApiProperty({
+    description: "Current page number",
+    example: 1,
+  })
+  @IsNumber()
+  page: number;
+
+  @ApiProperty({
+    description: "Next page number, null if no next page",
+    example: 2,
+    nullable: true,
+  })
+  @IsNumber()
+  @IsOptional()
+  nextPage: number | null;
+}
+```
+
+- **Create a ListResponseData interface** in `/src/common/interfaces/list-response.interface.ts`:
+
+```ts
+export interface ListResponseData<T> {
+  items: T[];
+  count: number;
+  page: number;
+  nextPage: number | null;
+}
+```
+
+- **For list endpoints, create a specific response DTO** that extends `ListResponseDto<T>`:
+
+```ts
+import { ApiProperty } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import { ValidateNested } from "class-validator";
+import { ListResponseDto } from "../../common/dto/list-response.dto";
+import { ProjectEntity } from "../entities/project.entity";
+
+export class ListProjectsResponseDto extends ListResponseDto<ProjectEntity> {
+  @ApiProperty({
+    description: "Array of projects",
+    type: [ProjectEntity],
+  })
+  @ValidateNested({ each: true })
+  @Type(() => ProjectEntity)
+  declare items: ProjectEntity[];
+}
+```
+
+- **Service methods for listing** should:
+  - Accept `page` and `limit` parameters (with defaults)
+  - Return `Result<ListResponseData<T>, ErrorType>`
+  - Calculate pagination with `skip` and `take`
+  - Get total count with `count()` query
+  - Calculate `nextPage` as `skip + limit < totalCount ? page + 1 : null`
+
+- **Controller methods for listing** should:
+  - Accept `@Query('page')` and `@Query('limit')` parameters
+  - Document query parameters with `@ApiQuery`
+  - Return the specific list response DTO
+  - Handle pagination in service calls
+
+- **Example service method**:
+
+```ts
+async list(
+  organizationId: string,
+  page: number = 1,
+  limit: number = 10,
+): Promise<Result<ListResponseData<ProjectEntity>, CreateProjectError>> {
+  try {
+    const skip = (page - 1) * limit;
+
+    const totalCount = await this.prisma.project.count({
+      where: { organizationId },
+    });
+
+    const projects = await this.prisma.project.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+
+    const nextPage = skip + limit < totalCount ? page + 1 : null;
+
+    const responseData: ListResponseData<ProjectEntity> = {
+      items: projects as ProjectEntity[],
+      count: totalCount,
+      page,
+      nextPage,
+    };
+
+    return Result.ok(responseData);
+  } catch (error) {
+    return Result.error(new ProjectError('Failed to list projects'));
+  }
+}
+```
+
+- **Example controller method**:
+
+```ts
+@Get()
+@ApiOperation({
+  summary: 'List all projects',
+  description: 'Get all projects for the organization with pagination',
+})
+@ApiQuery({
+  name: 'page',
+  required: false,
+  type: Number,
+  description: 'Page number (default: 1)',
+  example: 1,
+})
+@ApiQuery({
+  name: 'limit',
+  required: false,
+  type: Number,
+  description: 'Number of items per page (default: 10)',
+  example: 10,
+})
+@ApiResponse({
+  status: 200,
+  description: 'Projects retrieved successfully',
+  type: ListProjectsResponseDto,
+})
+async list(
+  @Query('page') page?: number,
+  @Query('limit') limit?: number,
+): Promise<ListProjectsResponseDto> {
+  const result = await this.projectsService.list(
+    organizationId,
+    page || 1,
+    limit || 10,
+  );
+
+  const [listData, error] = result.toTuple();
+
+  if (!error) {
+    return listData;
+  }
+
+  // Handle errors...
+}
+```
+
+**This pattern MUST be used for ALL list endpoints to ensure consistency across the API.**

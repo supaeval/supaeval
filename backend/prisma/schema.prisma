@@ -9,7 +9,9 @@ datasource db {
 }
 
 enum ProjectType {
-  IMAGE_EXTRACTION
+  MULTIMODAL
+  LLM_TEXT
+  INSTANCE_SEGMENTATION
 }
 
 model Organization {
@@ -46,7 +48,7 @@ model Project {
   id          String   @id @default(uuid())
   name        String
   description String
-  type        ProjectType @default(IMAGE_EXTRACTION)
+  type        ProjectType @default(MULTIMODAL)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

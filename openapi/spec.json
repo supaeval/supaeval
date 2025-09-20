@@ -1,24 +1,198 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/": {
-      "get": {
-        "operationId": "AppController_getHello",
+    "/projects": {
+      "post": {
+        "description": "Create a new project with the specified name, description, and type",
+        "operationId": "ProjectsController_create",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectDto"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": {
-            "description": "",
+          "201": {
+            "description": "Project created successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/CreateProjectResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Validation failed"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 422
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "User not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unprocessable Entity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to create project"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
                 }
               }
             }
           }
         },
+        "summary": "Create a new project",
         "tags": [
-          "App"
+          "projects"
+        ]
+      },
+      "get": {
+        "description": "Get all projects for the organization with pagination",
+        "operationId": "ProjectsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListProjectsResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 422
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Organization not found"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Unprocessable Entity"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to list projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to list projects"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List all projects",
+        "tags": [
+          "projects"
         ]
       }
     }
@@ -32,6 +206,189 @@
   "tags": [],
   "servers": [],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "CreateProjectDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the project",
+            "example": "E-commerce Platform"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the project",
+            "example": "A modern e-commerce platform with advanced features and analytics"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE_EXTRACTION"
+            ],
+            "description": "The type of the project",
+            "example": "IMAGE_EXTRACTION"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "type"
+        ]
+      },
+      "CreateProjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the project",
+            "example": "E-commerce Platform"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the project",
+            "example": "A modern e-commerce platform with advanced features and analytics"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE_EXTRACTION"
+            ],
+            "description": "The type of the project",
+            "example": "IMAGE_EXTRACTION"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The organization ID that owns this project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "createdById": {
+            "type": "string",
+            "description": "The user ID who created this project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "createdAt",
+          "updatedAt",
+          "organizationId",
+          "createdById"
+        ]
+      },
+      "ProjectEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the project",
+            "example": "E-commerce Platform"
+          },
+          "description": {
+            "type": "string",
+            "description": "The description of the project",
+            "example": "A modern e-commerce platform with advanced features and analytics"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IMAGE_EXTRACTION"
+            ],
+            "description": "The type of the project",
+            "example": "IMAGE_EXTRACTION"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The last update timestamp",
+            "example": "2024-03-14T12:00:00.000Z"
+          },
+          "organizationId": {
+            "type": "string",
+            "description": "The organization ID that owns this project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "createdById": {
+            "type": "string",
+            "description": "The user ID who created this project",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "type",
+          "createdAt",
+          "updatedAt",
+          "organizationId",
+          "createdById"
+        ]
+      },
+      "ListProjectsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Array of projects",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectEntity"
+            }
+          },
+          "count": {
+            "type": "number",
+            "description": "Total count of items",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number",
+            "example": 1
+          },
+          "nextPage": {
+            "type": "number",
+            "nullable": true,
+            "description": "Next page number, null if no next page",
+            "example": 2
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "page",
+          "nextPage"
+        ]
+      }
+    }
   }
 }
